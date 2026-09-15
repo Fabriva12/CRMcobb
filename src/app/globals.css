@@ -10,6 +10,18 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-brand-50: #eef7f7;
+  --color-brand-100: #d9efef;
+  --color-brand-200: #b5dfdf;
+  --color-brand-300: #8acaca;
+  --color-brand-400: #63b4b4;
+  --color-brand-500: #49a1a1;
+  --color-brand-600: #3d8585;
+  --color-brand-700: #356f6f;
+  --color-brand-800: #2f5c5c;
+  --color-brand-900: #2a4d4d;
+  --color-brand-black: #161616;
+  --color-brand-white: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
