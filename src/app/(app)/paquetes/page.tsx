@@ -9,29 +9,42 @@ import { PaquetesTable } from "@/components/paquetes-table";
 export default async function PaquetesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; error?: string }>;
+  searchParams: Promise<{ status?: string; error?: string; lista?: string }>;
 }) {
   await requireUser();
   const supabase = await createClient();
   const rate = await getExchangeRate(supabase);
 
-  const { status, error: errorParam } = await searchParams;
+  const { status, error: errorParam, lista } = await searchParams;
 
-  const { data: packages, error } = await supabase
-    .from("packages")
-    .select(
-      "id, tracking_number, status, peso_lb, tarifa_lb, pagado, created_at, descripcion, clients(id, nombre, telefono)"
-    )
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const [packagesRes, listsRes] = await Promise.all([
+    supabase
+      .from("packages")
+      .select(
+        "id, tracking_number, status, peso_lb, tarifa_lb, pagado, created_at, descripcion, fecha_recepcion, lista_id, clients(id, nombre, telefono), package_lists(nombre)"
+      )
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("package_lists")
+      .select("id, nombre")
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const { data: packages, error } = packagesRes;
+  const lists = listsRes.data ?? [];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Paquetes</h1>
-        <Link href="/paquetes/nuevo">
-          <Button>Registrar paquete</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/paquetes/importar">
+            <Button variant="secondary">Importar lista semanal</Button>
+          </Link>
+          <Link href="/paquetes/nuevo">
+            <Button>Registrar paquete</Button>
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
@@ -64,6 +77,8 @@ export default async function PaquetesPage({
           paquetes={packages ?? []}
           rate={rate}
           initialStatus={status ?? ""}
+          lists={lists}
+          initialLista={lista ?? ""}
         />
       )}
     </div>

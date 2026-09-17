@@ -24,8 +24,16 @@ export interface Package {
   pagado: boolean | null;
   descripcion: string | null;
   notas: string | null;
+  lista_id: string | null;
+  fecha_recepcion: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface PackageList {
+  id: string;
+  nombre: string;
+  created_at: string;
 }
 
 export interface PackageWithClient extends Package {
