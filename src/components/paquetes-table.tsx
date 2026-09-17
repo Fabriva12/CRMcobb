@@ -20,6 +20,8 @@ import {
 } from "@/lib/actions/packages";
 import { PackageRow, PackageControls } from "@/components/package-row";
 
+const SIN_LISTA = "__sin_lista__";
+
 type PaqueteRow = {
   id: string;
   tracking_number: string | null;
@@ -29,6 +31,12 @@ type PaqueteRow = {
   pagado: boolean | null;
   created_at: string | null;
   descripcion: string | null;
+  lista_id: string | null;
+  fecha_recepcion: string | null;
+  package_lists:
+    | { nombre?: string | null }
+    | { nombre?: string | null }[]
+    | null;
   clients:
     | { id?: string; nombre?: string | null; telefono?: string | null }
     | { id?: string; nombre?: string | null; telefono?: string | null }[]
@@ -39,10 +47,14 @@ export function PaquetesTable({
   paquetes,
   rate,
   initialStatus = "",
+  lists = [],
+  initialLista = "",
 }: {
   paquetes: PaqueteRow[];
   rate: number;
   initialStatus?: string;
+  lists?: { id: string; nombre: string }[];
+  initialLista?: string;
 }) {
   const [q, setQ] = useState("");
   const [estado, setEstado] = useState<string>(
@@ -50,18 +62,26 @@ export function PaquetesTable({
       ? initialStatus
       : ""
   );
+  const [lista, setLista] = useState<string>(
+    lists.some((l) => l.id === initialLista) ? initialLista : ""
+  );
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const filtered = useMemo(() => {
     const needle = normalizeSearch(q.trim());
     return paquetes.filter((p) => {
       if (estado && p.status !== estado) return false;
+      if (lista === SIN_LISTA) {
+        if (p.lista_id !== null) return false;
+      } else if (lista && p.lista_id !== lista) {
+        return false;
+      }
       if (!needle) return true;
       const tracking = normalizeSearch(p.tracking_number ?? "");
       const cliente = normalizeSearch(relationSingle(p.clients)?.nombre ?? "");
       return tracking.includes(needle) || cliente.includes(needle);
     });
-  }, [paquetes, q, estado]);
+  }, [paquetes, q, estado, lista]);
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -93,7 +113,16 @@ export function PaquetesTable({
   if (filtered.length === 0) {
     return (
       <div className="space-y-4">
-        <BuscarPaquetes q={q} setQ={setQ} estado={estado} setEstado={setEstado} total={paquetes.length} />
+        <BuscarPaquetes
+          q={q}
+          setQ={setQ}
+          estado={estado}
+          setEstado={setEstado}
+          lista={lista}
+          setLista={setLista}
+          lists={lists}
+          total={paquetes.length}
+        />
         <Card>
           <EmptyState message="Sin paquetes que coincidan con el filtro." />
         </Card>
@@ -103,7 +132,16 @@ export function PaquetesTable({
 
   return (
     <div className="space-y-4">
-      <BuscarPaquetes q={q} setQ={setQ} estado={estado} setEstado={setEstado} total={paquetes.length} />
+      <BuscarPaquetes
+          q={q}
+          setQ={setQ}
+          estado={estado}
+          setEstado={setEstado}
+          lista={lista}
+          setLista={setLista}
+          lists={lists}
+          total={paquetes.length}
+        />
       {selectedIds.size > 0 && (
         <BulkActionsBar
           count={selectedIds.size}
@@ -178,6 +216,11 @@ export function PaquetesTable({
               rate={rate}
             />
             <p className="pt-1 text-xs text-gray-400">
+              {relationSingle(p.package_lists)?.nombre && (
+                <span className="font-medium text-brand-700">
+                  Lista: {relationSingle(p.package_lists)?.nombre} ·{" "}
+                </span>
+              )}
               {formatDateNumeric(p.created_at)}
             </p>
           </Card>
@@ -206,6 +249,7 @@ export function PaquetesTable({
                 <th className="whitespace-nowrap px-4 py-3 font-semibold">Pagado</th>
                 <th className="whitespace-nowrap px-4 py-3 font-semibold">Peso</th>
                 <th className="whitespace-nowrap px-4 py-3 font-semibold">Total (₡)</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold">Lista</th>
                 <th className="whitespace-nowrap px-4 py-3 font-semibold">Fecha</th>
                 <th className="whitespace-nowrap px-4 py-3 font-semibold">Acciones</th>
               </tr>
@@ -250,6 +294,11 @@ export function PaquetesTable({
                     rate={rate}
                     cellClassName="whitespace-nowrap px-4 py-3"
                   />
+                  <td className="whitespace-nowrap px-4 py-3 text-gray-500">
+                    {relationSingle(p.package_lists)?.nombre ?? (
+                      <span className="italic text-gray-400">—</span>
+                    )}
+                  </td>
                   <td className="whitespace-nowrap px-4 py-3 text-gray-500">
                     {formatDateNumeric(p.created_at)}
                   </td>
@@ -486,12 +535,18 @@ function BuscarPaquetes({
   setQ,
   estado,
   setEstado,
+  lista,
+  setLista,
+  lists,
   total,
 }: {
   q: string;
   setQ: (value: string) => void;
   estado: string;
   setEstado: (value: string) => void;
+  lista: string;
+  setLista: (value: string) => void;
+  lists: { id: string; nombre: string }[];
   total: number;
 }) {
   return (
@@ -504,6 +559,21 @@ function BuscarPaquetes({
           placeholder="Buscar por tracking o cliente..."
           aria-label="Buscar paquetes"
         />
+      </div>
+      <div className="sm:w-48">
+        <Select
+          value={lista}
+          onChange={(e) => setLista(e.target.value)}
+          aria-label="Filtrar por lista"
+        >
+          <option value="">Todas las listas</option>
+          <option value={SIN_LISTA}>Sin lista</option>
+          {lists.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.nombre}
+            </option>
+          ))}
+        </Select>
       </div>
       <div className="sm:w-48">
         <Select
