@@ -21,7 +21,7 @@ export default async function PaquetesPage({
     supabase
       .from("packages")
       .select(
-        "id, tracking_number, status, peso_lb, tarifa_lb, pagado, created_at, descripcion, fecha_recepcion, lista_id, clients(id, nombre, telefono), package_lists(nombre)"
+        "id, tracking_number, status, peso_lb, tarifa_lb, pagado, created_at, descripcion, vuelo, fecha_recepcion, lista_id, clients(id, nombre, telefono), package_lists(nombre)"
       )
       .order("created_at", { ascending: false }),
     supabase

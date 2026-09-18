@@ -70,6 +70,16 @@ export function parseFechaRecepcion(value: unknown): string | null {
   return null;
 }
 
+export function cleanVuelo(value: unknown): string | null {
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    return value.toISOString().slice(0, 10);
+  }
+  const raw = cleanText(String(value ?? ""));
+  if (!raw) return null;
+  return raw.replace(/\s+-\s+\d{4}\s*$/u, "").trim();
+}
+
 export function parseXlsx(buffer: ArrayBuffer): ParseResult {
   const empty: ParseResult = { rows: [], emptyTracking: 0, duplicates: 0 };
 
@@ -142,7 +152,7 @@ export function parseXlsx(buffer: ArrayBuffer): ParseResult {
       contact: cleanText(String(row[colByHeader.contact] ?? "")),
       descripcion: cleanText(String(row[colByHeader.descripcion] ?? "")) || null,
       fecha_recepcion: parseFechaRecepcion(row[colByHeader.recibido]),
-      vuelo: cleanText(String(row[colByHeader.vuelo] ?? "")) || null,
+      vuelo: cleanVuelo(row[colByHeader.vuelo]),
     });
   }
 

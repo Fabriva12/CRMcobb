@@ -131,6 +131,8 @@ export default async function PaqueteDetallePage({
             pagado: pkg.pagado,
             descripcion: pkg.descripcion ?? "",
             notas: pkg.notas ?? "",
+            vuelo: pkg.vuelo ?? "",
+            fecha_recepcion: pkg.fecha_recepcion?.slice(0, 10) ?? null,
           }}
         />
       </Card>

@@ -16,6 +16,7 @@ import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import {
   deletePackageAction,
   bulkUpdatePackages,
+  bulkDeletePackages,
   updatePackageDescription,
 } from "@/lib/actions/packages";
 import { PackageRow, PackageControls } from "@/components/package-row";
@@ -33,6 +34,7 @@ type PaqueteRow = {
   descripcion: string | null;
   lista_id: string | null;
   fecha_recepcion: string | null;
+  vuelo: string | null;
   package_lists:
     | { nombre?: string | null }
     | { nombre?: string | null }[]
@@ -155,6 +157,7 @@ export function PaquetesTable({
             if (pagado !== null) changes.pagado = pagado;
             return bulkUpdatePackages([...selectedIds], changes);
           }}
+          onDelete={() => bulkDeletePackages([...selectedIds])}
           onClear={() => setSelectedIds(new Set())}
           onDone={() => setSelectedIds(new Set())}
         />
@@ -216,12 +219,7 @@ export function PaquetesTable({
               rate={rate}
             />
             <p className="pt-1 text-xs text-gray-400">
-              {relationSingle(p.package_lists)?.nombre && (
-                <span className="font-medium text-brand-700">
-                  Lista: {relationSingle(p.package_lists)?.nombre} ·{" "}
-                </span>
-              )}
-              {formatDateNumeric(p.created_at)}
+              Vuelo: {p.vuelo || "—"} · Bodega: {formatDateNumeric(p.fecha_recepcion)}
             </p>
           </Card>
         ))}
@@ -249,8 +247,8 @@ export function PaquetesTable({
                 <th className="whitespace-nowrap px-4 py-3 font-semibold">Pagado</th>
                 <th className="whitespace-nowrap px-4 py-3 font-semibold">Peso</th>
                 <th className="whitespace-nowrap px-4 py-3 font-semibold">Total (₡)</th>
-                <th className="whitespace-nowrap px-4 py-3 font-semibold">Lista</th>
-                <th className="whitespace-nowrap px-4 py-3 font-semibold">Fecha</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold">Vuelo</th>
+                <th className="whitespace-nowrap px-4 py-3 font-semibold">Bodega</th>
                 <th className="whitespace-nowrap px-4 py-3 font-semibold">Acciones</th>
               </tr>
             </thead>
@@ -295,12 +293,10 @@ export function PaquetesTable({
                     cellClassName="whitespace-nowrap px-4 py-3"
                   />
                   <td className="whitespace-nowrap px-4 py-3 text-gray-500">
-                    {relationSingle(p.package_lists)?.nombre ?? (
-                      <span className="italic text-gray-400">—</span>
-                    )}
+                    {p.vuelo || "—"}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-gray-500">
-                    {formatDateNumeric(p.created_at)}
+                    {formatDateNumeric(p.fecha_recepcion)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">
                     <PaqueteActions p={p} />
@@ -440,6 +436,7 @@ function BulkActionsBar({
   count,
   statuses,
   onApply,
+  onDelete,
   onClear,
   onDone,
 }: {
@@ -449,14 +446,18 @@ function BulkActionsBar({
     status: PackageStatus | null,
     pagado: boolean | null
   ) => Promise<{ error?: string; updated?: number }>;
+  onDelete: () => Promise<{ error?: string; deleted?: number }>;
   onClear: () => void;
   onDone: () => void;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [isDeleting, startDeleting] = useTransition();
   const [status, setStatus] = useState<string>("");
   const [pagado, setPagado] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+
+  const pending = isPending || isDeleting;
 
   function handleApply() {
     setError(null);
@@ -465,6 +466,23 @@ function BulkActionsBar({
         status ? (status as PackageStatus) : null,
         pagado === "" ? null : pagado === "true"
       );
+      if (result.error) {
+        setError(result.error);
+      } else {
+        onDone();
+        setStatus("");
+        setPagado("");
+        router.refresh();
+      }
+    });
+  }
+
+  function handleDelete() {
+    setError(null);
+    const message = `¿Eliminar ${count} paquete${count !== 1 ? "s" : ""}? Esta acción no se puede deshacer.`;
+    if (!window.confirm(message)) return;
+    startDeleting(async () => {
+      const result = await onDelete();
       if (result.error) {
         setError(result.error);
       } else {
@@ -487,7 +505,7 @@ function BulkActionsBar({
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          disabled={isPending}
+          disabled={pending}
           aria-label="Cambiar estado de seleccionados"
           className="rounded-md border border-brand-300 bg-white px-2 py-1.5 text-xs text-gray-700 shadow-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50"
         >
@@ -501,7 +519,7 @@ function BulkActionsBar({
         <select
           value={pagado}
           onChange={(e) => setPagado(e.target.value)}
-          disabled={isPending}
+          disabled={pending}
           aria-label="Cambiar pagado de seleccionados"
           className="rounded-md border border-brand-300 bg-white px-2 py-1.5 text-xs text-gray-700 shadow-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50"
         >
@@ -512,15 +530,23 @@ function BulkActionsBar({
         <Button
           size="sm"
           onClick={handleApply}
-          disabled={isPending || !anyChange}
+          disabled={pending || !anyChange}
         >
           {isPending ? "Aplicando…" : "Aplicar"}
         </Button>
         <Button
           size="sm"
+          variant="danger"
+          onClick={handleDelete}
+          disabled={pending}
+        >
+          {isDeleting ? "Eliminando…" : "Eliminar"}
+        </Button>
+        <Button
+          size="sm"
           variant="ghost"
           onClick={onClear}
-          disabled={isPending}
+          disabled={pending}
         >
           Limpiar
         </Button>

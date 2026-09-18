@@ -78,7 +78,7 @@ export default async function ClienteDetallePage({
         </Card>
       </div>
 
-      <Card>
+      <Card id="editar">
         <h2 className="mb-4 text-lg font-semibold text-gray-900">
           Editar cliente
         </h2>

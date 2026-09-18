@@ -47,6 +47,11 @@ function parsePagado(value: FormDataEntryValue | null): boolean | null {
   return null;
 }
 
+function parseDateField(value: FormDataEntryValue | null): string | null {
+  const raw = String(value ?? "").trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : null;
+}
+
 async function insertHistory(
   packageId: string,
   status: PackageStatus,
@@ -76,6 +81,9 @@ export async function createPackageAction(
     DEFAULT_TARIFF_LB
   );
   const descripcion = String(formData.get("descripcion") ?? "").trim() || null;
+  const vueloValue = formData.get("vuelo");
+  const vuelo = typeof vueloValue === "string" ? vueloValue.trim().slice(0, 120) || null : null;
+  const fecha_recepcion = parseDateField(formData.get("fecha_recepcion"));
 
   const { data, error } = await supabase
     .from("packages")
@@ -86,6 +94,8 @@ export async function createPackageAction(
       peso_lb,
       tarifa_lb,
       descripcion,
+      vuelo,
+      fecha_recepcion,
       notas: String(formData.get("notas") ?? "").trim() || null,
       pagado: false,
     })
@@ -128,6 +138,9 @@ export async function updatePackageAction(
   );
   const descripcion = String(formData.get("descripcion") ?? "").trim() || null;
   const notas = String(formData.get("notas") ?? "").trim() || null;
+  const vueloValue = formData.get("vuelo");
+  const vuelo = typeof vueloValue === "string" ? vueloValue.trim().slice(0, 120) || null : null;
+  const fecha_recepcion = parseDateField(formData.get("fecha_recepcion"));
 
   const { data: current, error: fetchError } = await supabase
     .from("packages")
@@ -151,6 +164,8 @@ export async function updatePackageAction(
       peso_lb,
       tarifa_lb,
       descripcion,
+      vuelo,
+      fecha_recepcion,
       notas,
       pagado,
     })
@@ -299,4 +314,24 @@ export async function bulkUpdatePackages(
   revalidatePath("/paquetes");
   revalidatePath("/");
   return { updated: data?.length ?? 0 };
+}
+
+export async function bulkDeletePackages(
+  ids: string[]
+): Promise<{ error?: string; deleted?: number }> {
+  await requireUser();
+  if (ids.length === 0) return { error: "No hay paquetes seleccionados." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("packages")
+    .delete()
+    .in("id", ids)
+    .select("id");
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/paquetes");
+  revalidatePath("/");
+  return { deleted: data?.length ?? 0 };
 }
