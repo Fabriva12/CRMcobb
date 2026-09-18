@@ -34,6 +34,8 @@ interface PackageFormProps {
     pagado?: boolean | null;
     descripcion?: string;
     notas?: string;
+    vuelo?: string | null;
+    fecha_recepcion?: string | null;
   };
 }
 
@@ -88,6 +90,25 @@ export function PackageForm({ action, clients, initial }: PackageFormProps) {
           placeholder="Comentarios internos (opcional)"
         />
       </Field>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Vuelo">
+          <Input
+            name="vuelo"
+            type="text"
+            placeholder="Ej: Viernes 03"
+            maxLength={120}
+            defaultValue={initial?.vuelo ?? ""}
+          />
+        </Field>
+        <Field label="Recibido a bodega">
+          <Input
+            name="fecha_recepcion"
+            type="date"
+            defaultValue={initial?.fecha_recepcion ?? ""}
+          />
+        </Field>
+      </div>
 
       {isEdit && (
         <>

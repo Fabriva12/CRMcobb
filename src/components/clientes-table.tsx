@@ -71,19 +71,27 @@ export function ClientesTable({ clientes }: { clientes: ClienteRow[] }) {
                   {formatDateShort(c.created_at)}
                 </p>
               </div>
-              <ConfirmDeleteForm
-                action={deleteClientAction}
-                id={c.id}
-                confirmMessage={`¿Eliminar al cliente ${c.nombre}?`}
-              >
-                <Button
-                  type="submit"
-                  variant="ghost"
-                  className="shrink-0 text-red-600 hover:bg-red-50"
-                >
-                  Eliminar
-                </Button>
-              </ConfirmDeleteForm>
+              <div className="flex shrink-0 items-center gap-3">
+                  <a
+                    href={`/clientes/${c.id}#editar`}
+                    className="text-sm font-medium text-brand-600 hover:underline"
+                  >
+                    Editar
+                  </a>
+                  <ConfirmDeleteForm
+                    action={deleteClientAction}
+                    id={c.id}
+                    confirmMessage={`¿Eliminar al cliente ${c.nombre}?`}
+                  >
+                    <Button
+                      type="submit"
+                      variant="ghost"
+                      className="shrink-0 text-red-600 hover:bg-red-50"
+                    >
+                      Eliminar
+                    </Button>
+                  </ConfirmDeleteForm>
+                </div>
             </Card>
           );
         })}
@@ -130,6 +138,12 @@ export function ClientesTable({ clientes }: { clientes: ClienteRow[] }) {
                       {formatDateShort(c.created_at)}
                     </td>
                     <td className="px-4 py-3 text-right">
+                      <a
+                        href={`/clientes/${c.id}#editar`}
+                        className="mr-4 text-sm font-medium text-brand-600 hover:underline"
+                      >
+                        Editar
+                      </a>
                       <ConfirmDeleteForm
                         action={deleteClientAction}
                         id={c.id}

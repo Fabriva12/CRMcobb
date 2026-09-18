@@ -20,6 +20,7 @@ export interface PreviewRow {
   contact: string;
   descripcion: string | null;
   fecha_recepcion: string | null;
+  vuelo: string | null;
   suggestedName: string;
   clientId: string | null;
 }
@@ -36,6 +37,7 @@ export interface ConfirmRow {
   tracking_number: string;
   descripcion: string | null;
   fecha_recepcion: string | null;
+  vuelo: string | null;
   clientId: string | null;
   clientName: string | null;
 }
@@ -145,6 +147,7 @@ export async function previewImportAction(
       contact: r.contact,
       descripcion: r.descripcion,
       fecha_recepcion: r.fecha_recepcion,
+      vuelo: r.vuelo,
       suggestedName:
         matchedId === null
           ? toTitleCase(r.contact)
@@ -173,6 +176,7 @@ interface SanitizedRow {
   tracking: string;
   descripcion: string | null;
   fecha_recepcion: string | null;
+  vuelo: string | null;
   clientId: string | null;
   clientName: string | null;
 }
@@ -196,6 +200,11 @@ function sanitizeRow(r: unknown): SanitizedRow | null {
       ? rec.fecha_recepcion
       : null;
 
+  const vuelo =
+    typeof rec.vuelo === "string" && rec.vuelo.trim()
+      ? cleanText(rec.vuelo).slice(0, 120)
+      : null;
+
   const clientIdRaw = typeof rec.clientId === "string" ? rec.clientId.trim() : "";
   const clientId =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
@@ -211,6 +220,7 @@ function sanitizeRow(r: unknown): SanitizedRow | null {
     tracking,
     descripcion,
     fecha_recepcion: fecha,
+    vuelo,
     clientId,
     clientName: clientName || null,
   };
@@ -377,6 +387,7 @@ export async function confirmImportAction(
     notas: null,
     lista_id: lista.id,
     fecha_recepcion: r.fecha_recepcion,
+    vuelo: r.vuelo,
   }));
 
   const { data: insertedData, error: insertError } = await supabase

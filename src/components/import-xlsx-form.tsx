@@ -128,6 +128,7 @@ export function ImportXlsxForm({ clients }: ImportXlsxFormProps) {
           tracking_number: r.tracking_number,
           descripcion: r.descripcion,
           fecha_recepcion: r.fecha_recepcion,
+          vuelo: r.vuelo,
           clientId,
           clientName,
         };
